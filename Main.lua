@@ -1,4 +1,4 @@
-local DEVELOPER_MODE = true
+local DEVELOPER_MODE = false
 local DEFAULT_CONFIG = {
 	BackgroundColor = Color3.fromRGB(30, 30, 30),
 	TextColor = Color3.fromRGB(225, 225, 255),
