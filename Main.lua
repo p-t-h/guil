@@ -262,7 +262,7 @@ function Window:SearchBox(Placeholder, Default, Values, OnChange)
 end
 
 function SearchBox:Update(NewList)
-	self.update(NewList)
+	self.refresh(NewList)
 end
 
 return function(Configuration)
