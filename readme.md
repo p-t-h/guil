@@ -4,7 +4,7 @@
 #### example
 ```lua
 local config = {
-  BackgroundColor = Color3.fromRGB(30, 30, 30),
+	BackgroundColor = Color3.fromRGB(30, 30, 30),
 	TextColor = Color3.fromRGB(225, 225, 255),
 	DecoColor = Color3.fromRGB(20, 20, 20),
 	DecoColor2 = Color3.fromRGB(225, 225, 225),
