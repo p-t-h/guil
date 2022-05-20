@@ -1,4 +1,4 @@
-local DEVELOPER_MODE = false
+local gUIl = {WindowCount = 0}
 local DEFAULT_CONFIG = {
 	BackgroundColor = Color3.fromRGB(30, 30, 30),
 	TextColor = Color3.fromRGB(225, 225, 255),
@@ -6,34 +6,34 @@ local DEFAULT_CONFIG = {
 	DecoColor2 = Color3.fromRGB(225, 225, 225),
 	Font = Enum.Font.GothamSemibold,
 }
-local Name = syn.crypt.random(64)
 
---#region Setup
-local gUIl = {} gUIl.__index = gUIl
+function _require(f)
+	if game["Run Service"]:IsStudio() then
+		return require(script.Parent.class[f])
+	else
+		return loadstring(game:HttpGet("https://raw.githubusercontent.com/p-t-h/guil/main/base/" + f + ".lua"))
+	end
+end
+
 local Window = {} Window.__index = Window
 local TextLabel = {} TextLabel.__index = TextLabel
 local Toggle = {} Toggle.__index = Toggle
 local TextBox = {} TextBox.__index = TextBox
 local IntBox = {} IntBox.__index = IntBox
+local SearchBox = {} SearchBox.__index = SearchBox
 
-gUIl.WindowCount = 0
---#endregion
---#region Functions
-function gUIl.Require(Path)
-	if DEVELOPER_MODE then
-		return loadfile("gUIl\\" .. Path)()
-	else
-		Path = Path:gsub("\\", "/")
-		return loadstring(game:HttpGet("https://raw.githubusercontent.com/p-t-h/guil/main" .. Path, true))()
-	end
+local Name
+if syn then
+	Name = syn.crypt.random(64) 
+else
+	Name = game.HttpService:GenerateGUID(false)
 end
---#endregion
---#region Window class functions
+
 function gUIl:Window(Title)
 	local Meta = setmetatable({}, Window)
 
 	gUIl.WindowCount += 1
-	local Base, BaseYSize = gUIl.Require("base\\Window.lua")(self, Title)
+	local Base, BaseYSize = _require("Window")(self, Title)
 
 	Base.Position = UDim2.new(0, (150 * (gUIl.WindowCount - 1)) + (15 * gUIl.WindowCount), 0, 15)
 	Base.Parent = self.Root
@@ -44,13 +44,12 @@ function gUIl:Window(Title)
 
 	return Meta
 end
---#endregion
---#region Text label functions
+
 function Window:TextLabel(Text)
 	local Meta = setmetatable({}, TextLabel)
 	self.BaseYSize.Value += 20
 
-	local Base = gUIl.Require("base\\TextLabel.lua")(self, Text)
+	local Base = _require("TextLabel")(self, Text)
 	Base.Parent = self.Base.Container.Frame
 
 	Meta.__label = Base
@@ -60,26 +59,24 @@ end
 function TextLabel:Update(Text)
 	self.__label.Text = Text
 end
---#endregion
---#region Button functions
+
 function Window:Button(Text, OnClick)
 	self.BaseYSize.Value += 30
 
-	local Base = gUIl.Require("base\\Button.lua")(self, Text)
+	local Base = _require("Button")(self, Text)
 	Base.Parent = self.Base.Container.Frame
 
 	Base.MouseButton1Click:Connect(function()
 		OnClick()
 	end)
 end
---#endregion
---#region Toggle functions
+
 function Window:Toggle(Text, OnToggle)
 	local Meta = setmetatable({}, Toggle)
 	Meta.Enabled = false
 	self.BaseYSize.Value += 30
 
-	local Base = gUIl.Require("base\\Button.lua")(self, Text) -- lol
+	local Base = _require("Button")(self, Text) -- lol
 	Base.Parent = self.Base.Container.Frame
 	Meta.Base = Base
 	Meta.update = function()
@@ -92,7 +89,7 @@ function Window:Toggle(Text, OnToggle)
 		local TI = TweenInfo.new(0.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 		local Tween = game:GetService("TweenService"):Create(Base.Deco, TI, {BackgroundColor3 = self.Enabled
 			and self.Configuration.DecoColor2 or self.Configuration.DecoColor})
-		
+
 		Tween:Play()
 		OnToggle(self.Enabled)
 	end)
@@ -106,13 +103,12 @@ function Toggle:Set(v)
 	self.Enabled = v
 	self.update()
 end
---#endregion
---#region Textbox functions
+
 function Window:TextBox(Placeholder, Default, OnChange)
 	local Meta = setmetatable({}, TextBox)
 	self.BaseYSize.Value += 30
 
-	local Base = gUIl.Require("base\\TextBox.lua")(self, Placeholder, Default)
+	local Base = _require("TextBox")(self, Placeholder, Default)
 	Base.Parent = self.Base.Container.Frame
 	Meta.Base = Base
 
@@ -131,13 +127,12 @@ function TextBox:Set(v)
 	self.Base.Input.Text = v
 	self.event(v)
 end
---#endregion
---#region Integerbox functions
+
 function Window:IntegerBox(Placeholder, Default, Min, Max, OnChange)
 	local Meta = setmetatable({}, IntBox)
 	self.BaseYSize.Value += 30
 
-	local Base = gUIl.Require("base\\IntBox.lua")(self, Placeholder, Default)
+	local Base = _require("IntBox")(self, Placeholder, Default)
 	Base.Parent = self.Base.Container.Frame
 
 	Meta.Value = Default
@@ -189,9 +184,91 @@ end
 function IntBox:Set(v)
 	self.update(v)
 end
---#endregion
---#region Init
+
+function Window:SearchBox(Placeholder, Default, Values, OnChange)
+	local Meta = setmetatable({}, SearchBox)
+	self.BaseYSize.Value += 30
+
+	local Base, Update = _require("TextBox")(self, Placeholder, Default)
+	Base.Parent = self.Base.Container.Frame
+	Meta.Base = Base
+
+	Meta.event = OnChange
+	Meta.Update = Update
+	
+	local List = Instance.new("Frame", Base)
+	List.BackgroundTransparency = 1
+	List.BorderSizePixel = 0
+	List.Visible = false
+	List.Size = UDim2.new(1, 0, 0, 0)
+	List.Position = UDim2.new(0, 0, 1, 0)
+	List.ClipsDescendants = true
+	List.ZIndex = 5
+	
+	local LO = Instance.new("UIListLayout", List)
+	LO.SortOrder = Enum.SortOrder.LayoutOrder
+	
+	self.refresh = function(e)
+		List.Size = UDim2.new(1, 0, 0, 0)
+		
+		for _, C in pairs(List:GetChildren()) do
+			if C:IsA("TextButton") then
+				C:Destroy()
+			end
+		end
+		
+		for _, Entry in pairs(e) do
+			local B = Instance.new("TextButton", List)
+			B.ZIndex = 6
+			B.BackgroundColor3 = gUIl.Configuration.BackgroundColor
+			B.BorderSizePixel = 0
+			B.Text = Entry
+			B.Size = UDim2.new(1, 0, 0, 15)
+			B.TextColor3 = gUIl.Configuration.TextColor
+			B.Font = gUIl.Configuration.Font
+			B.TextSize = 14
+			
+			List.Size += UDim2.new(0, 0, 0, 15)
+			
+			B.MouseButton1Click:Connect(function()
+				Base.Input.Text = Entry
+				List.Visible = false
+				OnChange(Entry)
+			end)
+		end
+	end
+	
+	self.refresh(Values)
+	
+	Base.Input.Focused:Connect(function() List.Visible = true end)
+	Base.Input.FocusLost:Connect(function() wait(0.1) List.Visible = false end)
+	
+	Base.Input:GetPropertyChangedSignal("Text"):Connect(function()
+		local InputText = Base.Input.Text
+		for _, c in pairs(List:GetChildren()) do
+			if c:IsA("TextButton") then
+				local inp_len = InputText:len()
+				local s2 = c.Text:sub(0, inp_len)
+				if InputText:sub(0, inp_len) == s2 or InputText == "" then
+					c.Visible = true
+				else
+					c.Visible = false
+				end
+			end
+		end
+	end)
+	
+	return Meta
+end
+
+function SearchBox:Update(NewList)
+	self.update(NewList)
+end
+
 return function(Configuration)
+	local s = pcall(function() return game.CoreGui.SelectionImageObject end)
+	local GUI = s and game.CoreGui or game.Players.LocalPlayer.PlayerGui
+	
 	if _G.LAST_NAME ~= nil then
 		game.CoreGui[_G.LAST_NAME]:Destroy()
 		_G.LAST_NAME = nil
@@ -207,13 +284,12 @@ return function(Configuration)
 	gUIl.Configuration = Configuration
 	table.freeze(gUIl.Configuration)
 
-	local Root = gUIl.Require("base\\Root.lua")()
+	local Root = _require("Root")()
 	Root.Name = Name
 	_G.LAST_NAME = Name
 
 	gUIl.Root = Root
-	gUIl.Root.Parent = game.CoreGui
+	gUIl.Root.Parent = GUI
 
 	return gUIl
 end
---#endregion
