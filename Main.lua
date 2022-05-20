@@ -287,7 +287,7 @@ return function(Configuration)
 	gUIl.Configuration = Configuration
 	table.freeze(gUIl.Configuration)
 
-	local Root = _require("Root")()
+	local Root = Instance.new("ScreenGui", GUI)
 	Root.Name = Name
 	_G.LAST_NAME = Name
 
