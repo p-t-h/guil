@@ -1,3 +1,5 @@
+--!nolint
+--!nocheck
 local gUIl = {WindowCount = 0}
 local DEFAULT_CONFIG = {
 	BackgroundColor = Color3.fromRGB(30, 30, 30),
@@ -208,11 +210,12 @@ function Window:SearchBox(Placeholder, Default, Values, OnChange)
 	local LO = Instance.new("UIListLayout", List)
 	LO.SortOrder = Enum.SortOrder.LayoutOrder
 	
-	self.refresh = function(e)
+	Meta.refresh = function(e)
 		List.Size = UDim2.new(1, 0, 0, 0)
 		
 		for _, C in pairs(List:GetChildren()) do
 			if C:IsA("TextButton") then
+				print(C.Text)
 				C:Destroy()
 			end
 		end
@@ -230,7 +233,7 @@ function Window:SearchBox(Placeholder, Default, Values, OnChange)
 			
 			List.Size += UDim2.new(0, 0, 0, 15)
 			
-			B.MouseButton1Click:Connect(function()
+			B.MouseButton1Down:Connect(function()
 				Base.Input.Text = Entry
 				List.Visible = false
 				OnChange(Entry)
@@ -238,10 +241,10 @@ function Window:SearchBox(Placeholder, Default, Values, OnChange)
 		end
 	end
 	
-	self.refresh(Values)
+	Meta.refresh(Values)
 	
 	Base.Input.Focused:Connect(function() List.Visible = true end)
-	Base.Input.FocusLost:Connect(function() wait(0.1) List.Visible = false end)
+	Base.Input.FocusLost:Connect(function() wait(0.05) List.Visible = false end)
 	
 	Base.Input:GetPropertyChangedSignal("Text"):Connect(function()
 		local InputText = Base.Input.Text
