@@ -13,7 +13,7 @@ function _require(f)
 	if game["Run Service"]:IsStudio() then
 		return require(script.Parent.class[f])
 	else
-		return loadstring(game:HttpGet("https://raw.githubusercontent.com/p-t-h/guil/main/base/" + f + ".lua"))
+		return loadstring(game:HttpGet("https://raw.githubusercontent.com/p-t-h/guil/main/base/" ..f.. ".lua"))
 	end
 end
 
